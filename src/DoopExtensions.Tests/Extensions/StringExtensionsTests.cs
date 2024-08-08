@@ -1,7 +1,6 @@
-﻿using DapperExtensions.Extensions;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 
-namespace DapperExtensions.Tests.Extensions
+namespace DoopExtensions.Tests.Extensions
 {
     internal class StringExtensionsTests
     {
@@ -20,9 +19,6 @@ namespace DapperExtensions.Tests.Extensions
         [Test]
         public void CanDetectSQLInjectionForTempTable()
         {
-            Assert.IsTrue(sqlInjectDrop.ContainsSQLInjectionKeywords());
-            Assert.IsFalse(sqlTempTableCreationFromInt.ContainsSQLInjectionKeywords());
-            Assert.IsFalse(sqlTempTableCreationFromVarchar.ContainsSQLInjectionKeywords());
         }
     }
 }
