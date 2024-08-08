@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DapperExtensions.Extensions
+namespace DoopExtensions.Extensions
 {
     internal static class TypeExtensions
     {

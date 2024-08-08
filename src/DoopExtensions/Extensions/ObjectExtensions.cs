@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace DapperExtensions.Extensions
+namespace DoopExtensions.Extensions
 {
     internal static class ObjectExtensions
     {

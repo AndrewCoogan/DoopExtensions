@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DapperExtensions.Models
+namespace DoopExtensions.Models
 {
     public class SchemaInfo
     {
