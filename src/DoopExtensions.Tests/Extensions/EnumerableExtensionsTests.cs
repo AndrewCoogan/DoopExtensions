@@ -104,7 +104,7 @@ namespace DoopExtensions.Tests.Extensions
             var newList = new ConcurrentBag<int>();
             var mockBody = new Mock<Func<int, Task>>();
             mockBody.Setup(x => x(It.IsAny<int>())).Returns<int>(async number => await IncrementAsync(number, newList));
-            await AsyncParallelForEach(items, mockBody.Object, maxDegreeOfParallelism: 3);
+            await AsyncParallelForEach(items, mockBody.Object, maxDegreeOfParallelism: 2);
             mockBody.Verify(x => x(It.IsAny<int>()), Times.Exactly(10));
         }
 
@@ -117,12 +117,16 @@ namespace DoopExtensions.Tests.Extensions
             mockBody.Setup(x => x(It.IsAny<int>())).Returns<int>(async number => await IncrementAsync(number, newList));
             await AsyncParallelForEach(items, mockBody.Object);
             mockBody.Verify(x => x(It.IsAny<int>()), Times.Exactly(10));
-            Assert.AreEqual(10, newList.Count);
-            // add are list the same method here for checking the elements.
-            var xx = 5;
+            
+            Assert.AreEqual(items.Count, newList.Count);
+            items.ForEach(x => Assert.Contains(x, newList));
+
+            // this requires order to be the same
+            // CollectionAssert.AreEqual(items, newList.ToList());
         }
 
-        private static Task AsyncParallelForEach<T>(IEnumerable<T> source, Func<T, Task> body, int maxDegreeOfParallelism = DataflowBlockOptions.Unbounded)
+        private static Task AsyncParallelForEach<T>(IEnumerable<T> source, Func<T, Task> body, 
+            int maxDegreeOfParallelism = DataflowBlockOptions.Unbounded)
         {
             return source.AsyncParallelForEach(body, maxDegreeOfParallelism);
         }
@@ -130,7 +134,7 @@ namespace DoopExtensions.Tests.Extensions
         private static async Task IncrementAsync(int number, ConcurrentBag<int> newItems)
         {
             await Task.Delay(1);
-            newItems.Add(number + 1);
+            newItems.Add(number);
         }
 
         private void GetCount<T>() where T : struct, IComparable, IConvertible, IFormattable
