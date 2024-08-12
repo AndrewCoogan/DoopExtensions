@@ -8,6 +8,9 @@ namespace DoopExtensions.Extensions
     public static class ListExtensions
     {
         private static readonly HashSet<Type> NumericTypes = GetNumericTypes();
+        private static readonly HashSet<Type> DateTypes = GetDateTypes();
+        private static readonly HashSet<Type> StringTypes = GetStringTypes();
+        public const double NumCompareThreshold = double.Epsilon;
 
         public static bool DoListsAgreeOnOverlappingAttributes<T, U>(this IEnumerable<T> source, IEnumerable<U> target)
         {
@@ -51,14 +54,12 @@ namespace DoopExtensions.Extensions
                 }
             }
 
-            var body = comparisons.Count > 0
-                ? comparisons.Aggregate(Expression.And)
-                : Expression.Constant(true);
+            var body = comparisons.Count > 0 ? comparisons.Aggregate(Expression.And) : Expression.Constant(true);
 
             return Expression.Lambda<Func<T, U, bool>>(body, tParam, uParam).Compile();
         }
 
-        private static Expression CreateComparison(Expression left, Expression right)
+        private static BinaryExpression CreateComparison(Expression left, Expression right)
         {
             var leftType = left.Type;
             var rightType = right.Type;
@@ -69,7 +70,7 @@ namespace DoopExtensions.Extensions
                 var convertedRight = Expression.Convert(right, typeof(double));
                 var subtraction = Expression.Subtract(convertedLeft, convertedRight);
                 var abs = Expression.Call(typeof(Math), "Abs", null, subtraction);
-                return Expression.LessThan(abs, Expression.Constant(double.Epsilon));
+                return Expression.LessThan(abs, Expression.Constant(NumCompareThreshold));
             }
 
             return Expression.Equal(left, right);
@@ -80,9 +81,21 @@ namespace DoopExtensions.Extensions
             return Nullable.GetUnderlyingType(type) ?? type;
         }
 
+        private static bool AreTypesComparable(Type type1, Type type2)
+        {
+            // see if the types are generally comparable.
+            if (type1 == type2)
+                return true;
+
+            var num = type1.IsNumericType() && type2.IsNumericType();
+            var date = type1.IsDateType() && type2.IsDateType();
+            var letters = type1.IsStringType() && type2.IsStringType();
+            return num || date || letters;
+        }
+
         private static HashSet<Type> GetNumericTypes()
         {
-            var numericTypes = new HashSet<Type>();
+            var numericTypes = new HashSet<Type> { typeof(decimal) };
 
             foreach (var type in typeof(int).Assembly.GetExportedTypes())
             {
@@ -96,22 +109,28 @@ namespace DoopExtensions.Extensions
                 }
             }
 
-            numericTypes.Add(typeof(decimal));
             return numericTypes;
         }
 
-        private static bool AreTypesComparable(Type type1, Type type2)
+        private static HashSet<Type> GetDateTypes() => new HashSet<Type>
         {
-            // see if the types are generally comparable.
-            if (type1 == type2)
-                return true;
+            typeof(DateTime),
+            typeof(DateTimeOffset),
+            typeof(TimeSpan)
+        };
 
-            return type1.IsNumericType() && type2.IsNumericType();
-        }
-
-        private static bool IsNumericType(this Type t)
+        private static HashSet<Type> GetStringTypes() => new HashSet<Type>
         {
-            return NumericTypes.Contains(GetUnderlyingType(t));
-        }
+            typeof(string),
+            typeof(char)
+        };
+
+        private static bool IsNumericType(this Type t) => NumericTypes.Contains(GetUnderlyingType(t));
+
+        private static bool IsDateType(this Type t) => DateTypes.Contains(GetUnderlyingType(t));
+
+        private static bool IsStringType(this Type t) => StringTypes.Contains(GetUnderlyingType(t));
+
+        public static HashSet<Type> NumberTypes => NumericTypes;
     }
 }
