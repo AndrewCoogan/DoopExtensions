@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace DoopExtensions.Tests.Extensions
@@ -113,47 +114,56 @@ namespace DoopExtensions.Tests.Extensions
             var testedPairs = new Dictionary<string, bool>();
             foreach (var type1 in numTypes)
             {
+                ArgumentNullException.ThrowIfNull(type1);
+                var (class1, list1, constructor1) = GenerateListStuff(type1);
+
                 foreach (var type2 in numTypes)
                 {
                     // I am going to allow this to compare to itself.
-                    ArgumentNullException.ThrowIfNull(type1);
                     ArgumentNullException.ThrowIfNull(type2);
+                    var (class2, list2, constructor2) = GenerateListStuff(type2);
 
-                    var dynamicClassType1 = typeof(DynamicClass<>).MakeGenericType(type1);
-                    var listType = typeof(List<>).MakeGenericType(dynamicClassType1);
-                    var list1 = Activator.CreateInstance(listType) as IList;
-
-                    var dynamicClassType2 = typeof(DynamicClass<>).MakeGenericType(type2);
-                    var listType2 = typeof(List<>).MakeGenericType(dynamicClassType2);
-                    var list2 = Activator.CreateInstance(listType2) as IList;
-
-                    var dynamicClassCtor1 = dynamicClassType1.GetConstructor(new[] { type1 });
-                    var dynamicClassCtor2 = dynamicClassType2.GetConstructor(new[] { type2 });
-
-                    ArgumentNullException.ThrowIfNull(list1);
-                    ArgumentNullException.ThrowIfNull(list2);
-                    ArgumentNullException.ThrowIfNull(dynamicClassCtor1);
-                    ArgumentNullException.ThrowIfNull(dynamicClassCtor2);
                     for (int i = 0; i < 5; i++)
                     {
                         var value1 = Convert.ChangeType(i, type1);
                         var value2 = Convert.ChangeType(i, type2);
-                        list1.Add(dynamicClassCtor1.Invoke(new[] { value1 }));
-                        list2.Add(dynamicClassCtor2.Invoke(new[] { value2 }));
+                        list1.Add(constructor1.Invoke(new[] { value1 }));
+                        list2.Add(constructor2.Invoke(new[] { value2 }));
                     }
 
                     // Now you can call your method using reflection
                     var methodInfo = typeof(ListExtensions).GetMethod("DoListsAgreeOnOverlappingAttributes");
                     ArgumentNullException.ThrowIfNull(methodInfo);
-                    var genericMethod = methodInfo.MakeGenericMethod(dynamicClassType1, dynamicClassType2);
+                    var genericMethod = methodInfo.MakeGenericMethod(class1, class2);
                     var result = (bool)genericMethod.Invoke(null, new[] { list1, list2 });
 
                     testedPairs.Add($"{type1}_{type2}", result);
                     Assert.IsTrue(result, $"Failed for types {type1.Name} and {type2.Name}");
+
+                    list1.Clear();
                 }
             }
 
             Assert.IsTrue(testedPairs.All(v => v.Value));
+        }
+
+        private static (Type type, IList list, ConstructorInfo constructor) GenerateListStuff(Type inp)
+        {
+            // make the instance of the dynamic class
+            ArgumentNullException.ThrowIfNull(inp);
+
+            var type = typeof(DynamicClass<>).MakeGenericType(inp);
+            ArgumentNullException.ThrowIfNull(type);
+
+            // make the instance of the list
+            var listType = typeof(List<>).MakeGenericType(type);
+            var list = Activator.CreateInstance(listType) as IList;
+            ArgumentNullException.ThrowIfNull(list);
+
+            // make a list interface adding values to
+            var constructor = type.GetConstructor(new[] { inp });
+            ArgumentNullException.ThrowIfNull(constructor);
+            return (type, list, constructor);
         }
     }
 }

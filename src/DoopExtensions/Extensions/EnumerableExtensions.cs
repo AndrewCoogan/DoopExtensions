@@ -87,5 +87,16 @@ namespace DoopExtensions.Extensions
                 source = source.Skip(chunkSize);
             }
         }
+
+        public static IEnumerable<T> Denullify<T>(this IEnumerable<T?> source) where T : struct // no classes
+        {
+            foreach (var item in source)
+            {
+                if (item is T value)
+                {
+                    yield return value;
+                }
+            }
+        }
     }
 }
