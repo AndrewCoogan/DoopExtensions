@@ -102,6 +102,7 @@ namespace DoopExtensions.Extensions
 
         private static bool AreTypesComparable(Type type1, Type type2)
         {
+            // see if the types are generally comparable.
             if (type1 == type2)
                 return true;
 

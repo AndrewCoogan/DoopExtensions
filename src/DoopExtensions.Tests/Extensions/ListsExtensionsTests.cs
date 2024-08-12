@@ -4,18 +4,20 @@ using System.Collections.Generic;
 
 namespace DoopExtensions.Tests.Extensions
 {
-    internal class SqlConnectionExtensionsTests
+    internal class ListExtensionTests
     {
         private class SimpleClass
         {
             public int Id { get; set; }
             public string? Name { get; set; }
+            public int ValueToCheck { get; set; }
         }
 
         private class DifferentClass
         {
             public int Id { get; set; }
             public string? Title { get; set; }
+            public double ValueToCheck { get; set; }
         }
 
         private class NumericClass
@@ -26,7 +28,7 @@ namespace DoopExtensions.Tests.Extensions
 
         private class DynamicClass<T>
         {
-            public required T Value { get; set; }
+            public T? Value { get; set; }
         }
 
         [Test]
@@ -44,7 +46,6 @@ namespace DoopExtensions.Tests.Extensions
             var list2 = new List<SimpleClass> { new() { Id = 2, Name = "Test" } };
             Assert.IsFalse(list1.DoListsAgreeOnOverlappingAttributes(list2));
         }
-
 
         [Test]
         public void DoListsAgreeOnOverlappingAttributes_OrderInvariance()
@@ -64,6 +65,14 @@ namespace DoopExtensions.Tests.Extensions
         {
             var list1 = new List<SimpleClass> { new() { Id = 1, Name = "Shouldn't Matter" } };
             var list2 = new List<DifferentClass> { new() { Id = 1, Title = "Doesn't Matter" } };
+            Assert.IsTrue(list1.DoListsAgreeOnOverlappingAttributes(list2));
+        }
+
+        [Test]
+        public void DoListsAgreeOnOverlappingAttributes_DifferentClassDifferentTypes()
+        {
+            var list1 = new List<SimpleClass> { new() { Id = 1, ValueToCheck = 5 } };
+            var list2 = new List<DifferentClass> { new() { Id = 1, ValueToCheck = 5 } };
             Assert.IsTrue(list1.DoListsAgreeOnOverlappingAttributes(list2));
         }
 
