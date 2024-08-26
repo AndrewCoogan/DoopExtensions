@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace DoopExtensions.Tests.Services
 {
@@ -8,7 +12,7 @@ namespace DoopExtensions.Tests.Services
         private static readonly DateTime _maxDate = new(2024, 8, 25);
         private static readonly DateTime _minDate = new(2010, 01, 01);
         private static readonly int _dateDelta = Convert.ToInt32(_maxDate.Subtract(_minDate).Days);
-        private readonly Random _rng = new();
+        private static readonly Random _rng = new();
 
 
         [SetUp]
@@ -23,17 +27,56 @@ namespace DoopExtensions.Tests.Services
             /// will need to write a way to validate.
         }
 
-        private string GenerateFileName(string dateFormat)
+        private class TestFile(string fileName)
         {
-            var header = Guid.NewGuid().ToString();
+            public string FileName { get; } = fileName;
+            public string? InitialFilePath { get; set; }
+            public string? FinalFilePath { get; set; }
 
-            return string.Empty;
         }
 
-
         [Test]
-        public void CanGetAllQueries()
+        public void CanGenerateSomeFileNames()
         {
+            var iterations = 10;
+            var dateFormat = "yyyyMMdd";
+            var requiredFileNameHeader = "InitTest";
+            var requiredFileNameTail = ".xx";
+
+            var files = GenerateFiles(iterations, dateFormat, requiredFileNameHeader, requiredFileNameTail);
+            Assert.IsNotNull(files);
+            Assert.IsNotEmpty(files);
+            Assert.AreEqual(iterations, files.Count());
+            Assert.That(files, Has.All.Matches<TestFile>(f => f.FileName.StartsWith(requiredFileNameHeader)));
+            Assert.That(files, Has.All.Matches<TestFile>(f => f.FileName.EndsWith(requiredFileNameTail)));
+        }
+
+        private static IEnumerable<TestFile> GenerateFiles(int count,
+            string dateFormat,
+            string requiredFileNameHeader = "",
+            string requiredFileNameTail = "")
+        {
+            return Enumerable.Range(0, count).Select(_ =>
+            {
+                var f = GenerateFileName(dateFormat, requiredFileNameHeader, requiredFileNameTail);
+                return new TestFile(f);
+            });
+        }
+
+        private static string GenerateFileName(string dateFormat,
+            string requiredFileNameHeader = "",
+            string requiredFileNameTail = "")
+        {
+            var fileNameDelimiter = "_";
+            var body = Guid.NewGuid().ToString();
+            var date = GenerateRandomDate().ToString(dateFormat);
+            return $"{requiredFileNameHeader}{fileNameDelimiter}{body}{fileNameDelimiter}{date}{requiredFileNameTail}";
+        }
+
+        private static DateTime GenerateRandomDate()
+        {
+            var delta = _rng.Next(_dateDelta);
+            return _minDate.AddDays(delta);
         }
     }
 }
