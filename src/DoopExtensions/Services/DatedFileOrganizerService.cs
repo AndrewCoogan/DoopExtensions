@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace DoopExtensions.Services
 {
@@ -12,6 +13,12 @@ namespace DoopExtensions.Services
         /// <returns></returns>
         public static async Task DataMigratorAsync<T>(string filePath)
         {
+        }
+
+        public static async Task<bool> MoveFile(string fileName)
+        {
+            return true;
+
         }
     }
 }
